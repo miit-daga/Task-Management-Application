@@ -7,8 +7,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSort } from '@fortawesome/free-solid-svg-icons';
-import { faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
+import { faFilter, faSort, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 
 
 const LoadingSpinner: React.FC = () => (
@@ -269,8 +268,10 @@ const TaskList: React.FC = () => {
 
 
                     <div className="flex space-x-4 mb-6">
+                        {/* Filter by Status */}
                         <Select onValueChange={(value) => setFilter({ ...filter, status: value })}>
-                            <SelectTrigger className="bg-gray-800 text-gray-200">
+                            <SelectTrigger className="bg-gray-800 text-gray-200 flex items-center">
+                                <FontAwesomeIcon icon={faFilter} className="mr-2" />
                                 <SelectValue placeholder="All Status" />
                             </SelectTrigger>
                             <SelectContent className="bg-gray-800 text-gray-200">
@@ -281,8 +282,10 @@ const TaskList: React.FC = () => {
                             </SelectContent>
                         </Select>
 
+                        {/* Filter by Priority */}
                         <Select onValueChange={(value) => setFilter({ ...filter, priority: value })}>
-                            <SelectTrigger className="bg-gray-800 text-gray-200">
+                            <SelectTrigger className="bg-gray-800 text-gray-200 flex items-center">
+                                <FontAwesomeIcon icon={faFilter} className="mr-2" />
                                 <SelectValue placeholder="All Priority" />
                             </SelectTrigger>
                             <SelectContent className="bg-gray-800 text-gray-200">
@@ -305,14 +308,13 @@ const TaskList: React.FC = () => {
                             </SelectContent>
                         </Select>
 
-
                         {sortField !== 'default' && (
                             <Button className="bg-blue-600 hover:bg-blue-500 text-white" onClick={() => handleSort(sortField)}>
                                 {sortOrder === 'asc' ? 'Descending' : 'Ascending'}
                             </Button>
                         )}
-
                     </div>
+
 
                     {filteredTasks.length > 0 ? (
                         <Table className="w-full bg-gray-800 text-gray-200">
