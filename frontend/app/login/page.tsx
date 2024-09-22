@@ -22,7 +22,6 @@ export default function Login() {
         setError({ username: '', password: '' });
 
         try {
-            console.log(process.env.NEXT_PUBLIC_API_BASE_URL);
             const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/login`, { username, password }, {
                 withCredentials: true
             });
