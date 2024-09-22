@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const authUtils = require('../utils/authUtils');
 
-const maxAge = 86400; // 3 days in seconds
 
 // @desc    Get all users
 // @route   GET /users
@@ -105,7 +104,7 @@ const logoutUser = async (req, resp) => {
     secure: true,
     partitioned: true,
     sameSite: 'None',
-    maxAge: -1 // 1 hour
+    maxAge: -1
   });
 
   resp.status(200).json({

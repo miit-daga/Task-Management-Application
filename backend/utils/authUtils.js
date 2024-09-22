@@ -41,7 +41,7 @@ const handleLogInError = (err) => {
   return errors;
 };
 
-const maxAge = 86400; // 3 days in seconds
+const maxAge = 3600000; // 1 hour
 const createToken = (username, userId) => {
   return jwt.sign(
     {
