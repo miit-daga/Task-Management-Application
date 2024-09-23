@@ -13,9 +13,9 @@ const app = express();
 
 const corsOptions = {
   origin: [
-    "http://localhost:3001", "https://task-management-app-by-miit.vercel.app", "https://task-management-trial.vercel.app"
+    "http://localhost:3001", "https://task-management-app-by-miit.vercel.app", "https://task-management-trial-r49l.vercel.app"
   ],
-  "Access-Control-Allow-Origin": ["https://task-management-app-by-miit.vercel.app", "http://localhost:3001", "https://task-management-trial.vercel.app"],
+  "Access-Control-Allow-Origin": ["https://task-management-app-by-miit.vercel.app", "http://localhost:3001", "https://task-management-trial-r49l.vercel.app"],
   "Access-Control-Allow-Credentials": true,
   methods: "GET,POST,PUT,DELETE,PATCH",
   optionsSuccessStatus: 200,
