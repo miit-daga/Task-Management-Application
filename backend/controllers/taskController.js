@@ -141,7 +141,6 @@ const moveTask = async (req, res) => {
 // @access Private
 const deleteTask = async (req, res) => {
     try {
-        console.log("Received task ID:", req.params.id);
         const token = req.cookies.jwt;
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const task = await Task.findById(req.params.id);
