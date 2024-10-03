@@ -38,6 +38,7 @@ const TaskList: React.FC = () => {
         if (!dateString) return true;
         const inputDate = new Date(dateString);
         const currentDate = new Date();
+        const maxYear = 2100;
 
         inputDate.setUTCHours(0, 0, 0, 0);
         currentDate.setUTCHours(0, 0, 0, 0);
@@ -49,7 +50,7 @@ const TaskList: React.FC = () => {
         currentDate.setUTCMinutes(currentDate.getUTCMinutes() + 30);
 
 
-        return inputDate >= currentDate;
+        return inputDate >= currentDate && inputDate.getFullYear() <= maxYear;
     };
 
     const router = useRouter();
@@ -97,7 +98,7 @@ const TaskList: React.FC = () => {
     const handleUpdateTask = async () => {
         if (!selectedTask) return;
         if (!isValidDate(selectedTask.dueDate || '')) {
-            setEditError('Please select a future date.');
+            setEditError('Please select a future date not later than year 2100.');
             return;
         }
         try {
@@ -115,7 +116,7 @@ const TaskList: React.FC = () => {
     const handleAddTask = async () => {
         if (!newTask) return;
         if (!isValidDate(newTask.dueDate || '')) {
-            setAddError('Please select a future date.');
+            setAddError('Please select a future date not later than year 2100.');
             return;
         }
         try {
