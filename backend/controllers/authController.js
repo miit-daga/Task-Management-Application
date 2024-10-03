@@ -38,7 +38,7 @@ const createUser = async (req, resp) => {
     // Always set the headers before sending the response
     resp.cookie('jwt', token, {
       httpOnly: true,
-      secure: true,
+      secure: false,
       sameSite: 'None',
       maxAge: 3600000, // 1 hour
       partitioned: true
@@ -73,7 +73,7 @@ const loginUser = async (req, resp) => {
         );
         resp.cookie('jwt', token, {
           httpOnly: true,
-          secure: true,
+          secure: false,
           sameSite: 'None',
           partitioned: true,
           maxAge: 3600000 // 1 hour
@@ -101,7 +101,7 @@ const logoutUser = async (req, resp) => {
   const token = req.cookies.jwt;
   resp.cookie('jwt', token, {
     httpOnly: true,
-    secure: true,
+    secure: false,
     partitioned: true,
     sameSite: 'None',
     maxAge: -1
