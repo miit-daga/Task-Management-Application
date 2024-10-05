@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import useApi from "../utils/useApi"; //custom hook to create axios instance
+import useApi from "../utils/useApi";
 import {
   DndContext,
   useSensors,
@@ -9,14 +9,18 @@ import {
   KeyboardSensor,
   DragEndEvent,
   closestCorners,
+  DragStartEvent,
+  DragOverlay,
 } from '@dnd-kit/core';
 import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
   SortableContext,
+  arrayMove,
 } from '@dnd-kit/sortable';
-import { useDroppable, UniqueIdentifier, } from '@dnd-kit/core';
+import { useDroppable, UniqueIdentifier } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "lucide-react";
@@ -45,14 +49,13 @@ type Column = {
 const KanbanBoard: React.FC = () => {
   const api = useApi();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [columns, setColumns] = useState<{ [key in ColumnKey]: Column }>({
     'to-do': { id: 'to-do', title: 'To Do', taskIds: [] },
     'in-progress': { id: 'in-progress', title: 'In Progress', taskIds: [] },
     'completed': { id: 'completed', title: 'Completed', taskIds: [] },
   });
 
-  // Function to fetch tasks from the API
-  // This updates the local state with tasks retrieved from the server.
   const fetchTasks = async () => {
     try {
       const response = await api.get('/tasks');
@@ -78,23 +81,27 @@ const KanbanBoard: React.FC = () => {
       newColumns[columnId].taskIds.push(task._id);
     });
 
-    // Effect to update columns based on the fetched tasks
-    // Maps tasks to their respective columns based on status.
     setColumns(newColumns);
   }, [tasks]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Minimum drag distance to activate
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
-  // Handle the end of a drag-and-drop event
-  // Updates the task's column and status when dragged to a new location.
-  // Sends an API request to update the task status on the server.
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
 
     if (!active || !over) return;
 
@@ -113,12 +120,24 @@ const KanbanBoard: React.FC = () => {
     setColumns(prevColumns => {
       const newColumns = JSON.parse(JSON.stringify(prevColumns));
       newColumns[sourceColumnKey].taskIds = newColumns[sourceColumnKey].taskIds.filter((id: string) => id !== activeTaskId);
-      const destinationIndex = newColumns[destinationColumnKey].taskIds.indexOf(overId);
-      if (destinationIndex !== -1) {
-        newColumns[destinationColumnKey].taskIds.splice(destinationIndex, 0, activeTaskId);
+      
+      if (sourceColumnKey === destinationColumnKey) {
+        const oldIndex = prevColumns[sourceColumnKey].taskIds.indexOf(activeTaskId);
+        const newIndex = prevColumns[destinationColumnKey].taskIds.indexOf(overId);
+        newColumns[destinationColumnKey].taskIds = arrayMove(
+          prevColumns[destinationColumnKey].taskIds,
+          oldIndex,
+          newIndex
+        );
       } else {
-        newColumns[destinationColumnKey].taskIds.push(activeTaskId);
+        const destinationIndex = newColumns[destinationColumnKey].taskIds.indexOf(overId);
+        if (destinationIndex !== -1) {
+          newColumns[destinationColumnKey].taskIds.splice(destinationIndex, 0, activeTaskId);
+        } else {
+          newColumns[destinationColumnKey].taskIds.push(activeTaskId);
+        }
       }
+      
       return newColumns;
     });
 
@@ -140,12 +159,15 @@ const KanbanBoard: React.FC = () => {
     }
   };
 
-  // Helper function to find the column of a given task ID
-  // Searches through columns to determine where the task currently resides.
   const findColumnOfTask = (taskId: string): ColumnKey | undefined => {
     return Object.entries(columns).find(([_, column]) =>
       column.taskIds.includes(taskId)
     )?.[0] as ColumnKey | undefined;
+  };
+
+  const getActiveTask = () => {
+    if (!activeId) return null;
+    return tasks.find(task => task._id === activeId);
   };
 
   const getPriorityColor = (priority: Task['priority']) => {
@@ -169,8 +191,30 @@ const KanbanBoard: React.FC = () => {
     });
   };
 
-  // Component representing a droppable column for tasks
-  // Uses useDroppable to allow tasks to be dropped in this column.
+  const TaskCard: React.FC<{ task: Task; isDragging?: boolean }> = ({ task, isDragging = false }) => {
+    return (
+      <div className={`bg-gray-700 p-3 rounded shadow mb-2 transition-all duration-200 ${
+        isDragging ? 'opacity-75 scale-105' : ''
+      }`}>
+        <h3 className="font-semibold mb-1 text-white">{task.title}</h3>
+        {task.description && (
+          <p className="text-sm text-gray-400 mb-2">{task.description}</p>
+        )}
+        <div className="flex items-center justify-between">
+          <Badge className={getPriorityColor(task.priority)}>
+            {task.priority}
+          </Badge>
+          {task.dueDate && (
+            <div className="flex items-center text-xs text-gray-400">
+              <Calendar className="w-3 h-3 mr-1" />
+              {formatDate(task.dueDate)}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const DroppableColumn: React.FC<{ columnKey: ColumnKey; column: Column }> = ({ columnKey, column }) => {
     const { setNodeRef } = useDroppable({
       id: columnKey,
@@ -178,7 +222,7 @@ const KanbanBoard: React.FC = () => {
 
     return (
       <Card
-        className="w-full max-w-xs flex flex-col bg-gray-800 text-white"
+        className="w-full max-w-xs flex flex-col bg-gray-800 text-white transition-colors duration-200"
         ref={setNodeRef}
       >
         <CardHeader>
@@ -202,7 +246,7 @@ const KanbanBoard: React.FC = () => {
             })}
 
             {column.taskIds.length === 0 && (
-              <div className="flex-grow flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-600 rounded-lg">
+              <div className="flex-grow flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-600 rounded-lg transition-all duration-200">
                 Drop tasks here
               </div>
             )}
@@ -212,8 +256,6 @@ const KanbanBoard: React.FC = () => {
     );
   };
 
-  // Component for rendering individual sortable tasks
-  // Utilizes useSortable to enable dragging and dropping of tasks within the board.
   const SortableTask: React.FC<{ task: Task }> = ({ task }) => {
     const {
       attributes,
@@ -221,11 +263,14 @@ const KanbanBoard: React.FC = () => {
       setNodeRef,
       transform,
       transition,
+      isDragging,
     } = useSortable({ id: task._id as UniqueIdentifier });
 
     const style = {
-      transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
+      transform: CSS.Transform.toString(transform),
       transition,
+      opacity: isDragging ? 0.5 : undefined,
+      cursor: 'grab',
     };
 
     return (
@@ -235,23 +280,7 @@ const KanbanBoard: React.FC = () => {
         {...attributes}
         {...listeners}
       >
-        <div className="bg-gray-700 p-3 rounded shadow mb-2">
-          <h3 className="font-semibold mb-1 text-white">{task.title}</h3>
-          {task.description && (
-            <p className="text-sm text-gray-400 mb-2">{task.description}</p>
-          )}
-          <div className="flex items-center justify-between">
-            <Badge className={getPriorityColor(task.priority)}>
-              {task.priority}
-            </Badge>
-            {task.dueDate && (
-              <div className="flex items-center text-xs text-gray-400">
-                <Calendar className="w-3 h-3 mr-1" />
-                {formatDate(task.dueDate)}
-              </div>
-            )}
-          </div>
-        </div>
+        <TaskCard task={task} isDragging={isDragging} />
       </div>
     );
   };
@@ -269,6 +298,7 @@ const KanbanBoard: React.FC = () => {
       </Button>
       <DndContext
         sensors={sensors}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         collisionDetection={closestCorners}
       >
@@ -277,6 +307,9 @@ const KanbanBoard: React.FC = () => {
             <DroppableColumn key={key} columnKey={key} column={column} />
           ))}
         </div>
+        <DragOverlay>
+          {activeId ? <TaskCard task={getActiveTask()!} isDragging /> : null}
+        </DragOverlay>
       </DndContext>
     </div>
   );
