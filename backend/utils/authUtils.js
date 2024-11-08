@@ -1,3 +1,4 @@
+//authUtils.js
 const jwt = require('jsonwebtoken');
 
 const handleSignUpError = (err) => {

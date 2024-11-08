@@ -1,7 +1,10 @@
+//authController.js
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const authUtils = require('../utils/authUtils');
+const deadlineNotifier = require('../notifications/deadlineNotifier');
+
 
 
 // @desc    Get all users
@@ -29,32 +32,33 @@ const createUser = async (req, resp) => {
       email,
       password,
     });
-
     await user.save();
+
+    // Subscribe user to deadline notifications
+    await deadlineNotifier.subscribeUser(email);
+
     const token = authUtils.createToken(
       user.username,
       user._id,
     );
-    // Always set the headers before sending the response
+
     resp.cookie('jwt', token, {
       httpOnly: true,
       secure: true,
       sameSite: 'None',
-      maxAge: 3600000, // 1 hour
+      maxAge: 3600000,
       partitioned: true
     });
 
     resp.status(201).json({
       user: user,
     });
-
   } catch (err) {
     const errors = authUtils.handleSignUpError(err);
     console.log(errors);
     resp.status(500).json({ errors });
   }
 };
-
 
 // @desc    Log in a user
 // @route   POST /login
