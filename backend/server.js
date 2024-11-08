@@ -50,10 +50,10 @@ cron.schedule('0 9 * * *', () => {
   deadlineNotifier.checkDeadlines();
 });
 
-// cron.schedule('*/5 * * * *', () => {
-//   console.log('Running deadline check every 5 minutes...');
-//   deadlineNotifier.checkDeadlines();
-// });
+cron.schedule('*/1 * * * *', () => {
+  console.log('Running deadline check every 5 minutes...');
+  deadlineNotifier.checkDeadlines();
+});
 
 app.listen(port, () => {
   console.log(`Server started on port ${port}!`);
