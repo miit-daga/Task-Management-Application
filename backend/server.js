@@ -51,7 +51,7 @@ cron.schedule('0 9 * * *', () => {
 });
 
 cron.schedule('*/1 * * * *', () => {
-  console.log('Running deadline check every 5 minutes...');
+  console.log('Running deadline check every 1 minute...');
   deadlineNotifier.checkDeadlines();
 });
 
